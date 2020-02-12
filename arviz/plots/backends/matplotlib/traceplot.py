@@ -16,6 +16,7 @@ def plot_trace(
     figsize,
     rug,
     lines,
+    compact,
     combined,
     legend,
     plot_kwargs,
@@ -51,6 +52,9 @@ def plot_trace(
     lines : tuple
         Tuple of (var_name, {'coord': selection}, [line, positions]) to be overplotted as
         vertical lines on the density and horizontal lines on the trace.
+    compact : bool
+        Flag for combining multidimensional variables into a single line.
+        If False (default), each dimension will be plotted separately.
     combined : bool
         Flag for combining multiple chains into a single line. If False (default), chains will be
         plotted separately.
