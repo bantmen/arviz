@@ -7,7 +7,7 @@ import numpy as np
 
 from . import backend_kwarg_defaults, backend_show
 from ...distplot import plot_dist
-from ...plot_utils import _scale_fig_size, get_bins, make_label
+from ...plot_utils import _scale_fig_size, get_bins, make_label, format_coords_as_labels
 
 
 def plot_trace(
@@ -28,6 +28,7 @@ def plot_trace(
     trace_kwargs,
     plotters,
     divergence_data,
+    axes,
     backend_kwargs,
     show,
 ):
@@ -127,7 +128,8 @@ def plot_trace(
     trace_kwargs.setdefault("linewidth", linewidth)
     plot_kwargs.setdefault("linewidth", linewidth)
 
-    _, axes = plt.subplots(len(plotters), 2, squeeze=False, figsize=figsize, **backend_kwargs)
+    if axes is None:
+        _, axes = plt.subplots(len(plotters), 2, squeeze=False, figsize=figsize, **backend_kwargs)
 
     for idx, (var_name, selection, value) in enumerate(plotters):
         value = np.atleast_2d(value)
@@ -155,10 +157,21 @@ def plot_trace(
                 plot_kwargs.pop(compact_prop[0])
                 trace_kwargs.pop(compact_prop[0])
         else:
+            sub_data = data[var_name].sel(**selection)
+            legend_labels = format_coords_as_labels(sub_data, skip_dims=("chain", "draw"))
+            legend_title = ", ".join(
+                [
+                    "{}".format(coord_name)
+                    for coord_name in sub_data.coords
+                    if coord_name not in {"chain", "draw"}
+                ]
+            )
             value = value.reshape((value.shape[0], value.shape[1], -1))
             compact_prop_cycle = cycle(compact_prop[1])
             handles = []
-            for sub_idx, prop in zip(range(value.shape[2]), compact_prop_cycle):
+            for sub_idx, label, prop in zip(
+                range(value.shape[2]), legend_labels, compact_prop_cycle
+            ):
                 if compact_prop:
                     plot_kwargs[compact_prop[0]] = prop
                     trace_kwargs[compact_prop[0]] = prop
@@ -180,11 +193,11 @@ def plot_trace(
                 if legend:
                     handles.append(
                         Line2D(
-                            [], [], label="dim", **{chain_prop[0]: chain_prop[1][0]}, **plot_kwargs
+                            [], [], label=label, **{chain_prop[0]: chain_prop[1][0]}, **plot_kwargs
                         )
                     )
             if legend:
-                axes[idx, 0].legend(handles=handles, title="extra dims")
+                axes[idx, 0].legend(handles=handles, title=legend_title)
             plot_kwargs.pop(compact_prop[0], None)
             trace_kwargs.pop(compact_prop[0], None)
 
